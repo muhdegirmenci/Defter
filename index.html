@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Veresiye">
+<meta name="theme-color" content="#153e35">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<title>Lastikçi Veresiye Defteri</title>
+<style>
+html{-webkit-text-size-adjust:100%}body{margin:0}[hidden]{display:none!important}
+/* Düzen: tek sütun, telefon öncelikli. Üstte toplam alacak, altında sekmeler; listeler satır satır, ayrıntı satıra dokununca açılır. */
+:root{
+  --bg:#f2f5f3; --surface:#ffffff; --fg:#17211d; --muted:#5b6a63; --line:#d8e1db;
+  --head:#153e35; --head-fg:#ffffff;
+  --accent:#1d5a49; --accent-fg:#ffffff; --accent-soft:#e2eee8;
+  --danger:#b3261e; --danger-soft:#fdecea; --ok:#1b6b43; --ok-soft:#dcf2e5;
+  --overlay:rgba(10,20,16,.55);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1714; --surface:#17211d; --fg:#e8efeb; --muted:#9aaba2; --line:#2a3832;
+    --head:#12332b; --head-fg:#f1f6f3;
+    --accent:#2a8068; --accent-fg:#ffffff; --accent-soft:#1f2f29;
+    --danger:#ff8f86; --danger-soft:#3a1f1d; --ok:#6fd49c; --ok-soft:#183427;
+    --overlay:rgba(0,0,0,.65); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1714; --surface:#17211d; --fg:#e8efeb; --muted:#9aaba2; --line:#2a3832;
+  --head:#12332b; --head-fg:#f1f6f3;
+  --accent:#2a8068; --accent-fg:#ffffff; --accent-soft:#1f2f29;
+  --danger:#ff8f86; --danger-soft:#3a1f1d; --ok:#6fd49c; --ok-soft:#183427;
+  --overlay:rgba(0,0,0,.65); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+header{background:var(--head);color:var(--head-fg);padding:calc(18px + env(safe-area-inset-top,0px)) 16px 16px}
+.hwrap,main{max-width:720px;margin:0 auto}
+header h1{font-size:15px;font-weight:600;margin:0;opacity:.85;letter-spacing:.02em}
+.total{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:6px}
+.total strong{font-size:30px;font-weight:700;line-height:1.1;overflow-wrap:anywhere}
+.total span{font-size:13px;opacity:.85}
+main{padding:14px 16px 48px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tab{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--accent);border-radius:10px;padding:11px 4px;font:inherit;font-size:14px;font-weight:650;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+:where(button,input,select,textarea,[role=button]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{display:block}
+.panel[hidden]{display:none!important}
+label{display:block;font-size:12px;color:var(--muted);font-weight:650;margin:0 0 5px}
+input,select,textarea{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;font-size:16px}
+textarea{min-height:72px;resize:vertical}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{min-width:0}.full{grid-column:1/-1}
+.btn{border:0;border-radius:10px;padding:12px 14px;font:inherit;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-fg)}
+.btn.secondary{background:var(--accent-soft);color:var(--accent)}
+.btn.danger{background:var(--danger-soft);color:var(--danger)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.actions .btn{flex:1}
+.searchrow{display:flex;gap:8px;margin-bottom:10px}
+.searchrow input{flex:1;min-width:0}.searchrow select{width:auto;max-width:140px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-top:8px;overflow:hidden}
+.rowhead{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:14px;cursor:pointer;background:none;border:0;color:inherit;font:inherit;text-align:left}
+.rowhead .l{min-width:0;display:block}
+.rowhead .name{display:block;font-weight:650;font-size:16px;overflow-wrap:anywhere}
+.rowhead .sub{display:block;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.rowhead .r{display:flex;align-items:center;gap:10px;flex:none}
+.amt{font-weight:750;font-size:16px;white-space:nowrap}
+.debt{color:var(--danger)}
+.chev{width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+.card.open .chev{transform:rotate(45deg)}
+.detail{display:none;padding:0 14px 14px}
+.card.open .detail{display:block}
+.line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.line:first-child{border-top:0}
+.muted{color:var(--muted);font-size:13px}
+.pill{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;background:var(--ok-soft);color:var(--ok)}
+.smallbtn{border:1px solid var(--line);background:var(--surface);color:var(--accent);padding:9px 12px;border-radius:9px;font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+.smallbtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.smallbtn.danger{color:var(--danger)}
+.drow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.empty{text-align:center;padding:28px 10px;color:var(--muted)}
+.banner{background:var(--danger-soft);color:var(--danger);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.backup{display:flex;gap:8px;margin-top:18px}
+.backup .btn{flex:1;font-size:13px;padding:10px}
+.dlgback{position:fixed;inset:0;background:var(--overlay);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
+.dlgback[hidden]{display:none!important}
+.dlgbox{background:var(--surface);color:var(--fg);border-radius:14px;padding:18px;width:100%;max-width:380px}
+.dlgmsg{white-space:pre-line;margin-bottom:12px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:120;max-width:90%}
+.toast[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+</style>
+</head><body>
+<header><div class="hwrap">
+  <h1>Lastikçi Veresiye Defteri</h1>
+  <div class="total"><strong id="totalDebt">₺0,00</strong><span id="debtorCount"></span></div>
+</div></header>
+
+<main>
+<div id="localBanner" class="banner" hidden>Bu ekranda kayıt saklanamıyor. Kapatınca kayıtlar silinir, hemen yedek al.</div>
+<div id="backupBanner" class="banner" hidden></div>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" data-tab="debtors" aria-selected="true">Borçlular</button>
+  <button class="tab" role="tab" data-tab="entry" aria-selected="false">Ekle</button>
+  <button class="tab" role="tab" data-tab="records" aria-selected="false">Kayıtlar</button>
+  <button class="tab" role="tab" data-tab="services" aria-selected="false">İşler</button>
+</div>
+
+<section id="debtors" class="panel"><div id="debtorList"></div></section>
+
+<section id="entry" class="panel" hidden>
+<form id="entryForm">
+  <input type="hidden" id="editId">
+  <div class="grid">
+    <div class="field full"><label for="name">Müşteri *</label><input id="name" required list="names" autocomplete="off" placeholder="Ad soyad"></div>
+    <div class="field"><label for="plate">Plaka</label><input id="plate" autocapitalize="characters" placeholder="61 ABC 123"></div>
+    <div class="field"><label for="phone">Telefon</label><input id="phone" type="tel" placeholder="05xx xxx xx xx"></div>
+    <div class="field full"><label for="service">Yapılan iş *</label><select id="service" required></select></div>
+    <div class="field"><label for="amount">Tutar (₺) *</label><input id="amount" type="number" inputmode="decimal" min="0" step="0.01" required placeholder="0"></div>
+    <div class="field"><label for="paid">Alınan (₺)</label><input id="paid" type="number" inputmode="decimal" min="0" step="0.01" value="0"></div>
+    <div class="field full"><label for="date">Tarih *</label><input id="date" type="datetime-local" required></div>
+    <div class="field full"><label for="note">Not</label><textarea id="note"></textarea></div>
+  </div>
+  <datalist id="names"></datalist>
+  <div class="actions"><button class="btn" type="submit" id="saveBtn">Kaydet</button><button class="btn secondary" type="button" id="cancelEdit" hidden>Vazgeç</button></div>
+</form>
+</section>
+
+<section id="records" class="panel" hidden>
+  <div class="searchrow"><input id="search" type="search" placeholder="Ara: isim, plaka, telefon"><select id="filter"><option value="all">Hepsi</option><option value="open">Borçlu</option><option value="paid">Ödenen</option></select></div>
+  <div id="recordList"></div>
+  <div class="backup" id="backupRow"><button class="btn secondary" type="button" id="csvBtn">Excel (CSV)</button><button class="btn secondary" type="button" id="jsonBtn">Yedek al</button><label class="btn secondary" style="text-align:center;margin:0;color:var(--accent);font-size:13px;padding:10px;font-weight:700;cursor:pointer">Yedek yükle<input id="importFile" type="file" accept=".json,application/json" hidden></label></div>
+  <div id="backupInfo" class="muted" style="margin-top:8px"></div>
+</section>
+
+<section id="services" class="panel" hidden>
+  <form id="serviceForm"><div class="searchrow"><input id="newService" required placeholder="Yeni iş, örn. Rot ayarı"><button class="btn" type="submit">Ekle</button></div></form>
+  <div id="serviceList"></div>
+</section>
+</main>
+
+<div id="dlg" class="dlgback" role="dialog" aria-modal="true" hidden><div class="dlgbox"><div id="dlgMsg" class="dlgmsg"></div><input id="dlgInput" inputmode="decimal" autocomplete="off" hidden><div class="actions"><button class="btn secondary" type="button" id="dlgCancel">Vazgeç</button><button class="btn" type="button" id="dlgOk">Tamam</button></div></div></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const OLD_KEY='lastikci_defteri_v1',OLD_SKEY='lastikci_isler_v1',MIG_FLAG='lastikci_db_aktarildi';
+const defaults=['Lastik tamiri','Yama','Fitil','Lastik sökme-takma','Balans','Lastik değişimi','Hava basma','Supap değişimi','İç lastik değişimi','Diğer'];
+let db=null,dl=null,records=[],services=[...defaults],loaded=false,debtorGroups=[];
+const openSet=new Set();
+
+const lsGet=k=>{try{return localStorage.getItem(k)}catch{return null}};
+let lsOk=true;
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);return true}catch{lsOk=false;$('localBanner').hidden=false;return false}};
+const BK_KEY='lastikci_son_yedek';
+const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
+const r2=n=>Math.round(n*100)/100;
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nowLocal=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)};
+const niceDate=s=>{const d=new Date(s);return isNaN(d)?'':d.toLocaleString('tr-TR',{dateStyle:'short',timeStyle:'short'})};
+const shortDate=s=>{const d=new Date(s);return isNaN(d)?'':d.toLocaleDateString('tr-TR')};
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const debt=r=>Math.max(0,r2(Number(r.amount)-Number(r.paid||0)));
+const custKey=r=>((r.phone||'').replace(/\D/g,'')||r.name.trim()).toLocaleLowerCase('tr-TR');
+
+/* Sayfa içi pencereler (tarayıcının alert/confirm/prompt'u bu ortamda çalışmaz) */
+function dialog({message,input=false,okText='Tamam',cancelText='Vazgeç',showCancel=true,danger=false}){return new Promise(res=>{const box=$('dlg'),inp=$('dlgInput'),ok=$('dlgOk'),cancel=$('dlgCancel');$('dlgMsg').textContent=message;inp.value='';inp.hidden=!input;ok.textContent=okText;cancel.textContent=cancelText;cancel.hidden=!showCancel;ok.className=danger?'btn danger':'btn';box.hidden=false;if(input)setTimeout(()=>inp.focus(),30);const done=v=>{box.hidden=true;ok.onclick=cancel.onclick=inp.onkeydown=null;res(v)};ok.onclick=()=>done(input?inp.value:true);cancel.onclick=()=>done(input?null:false);inp.onkeydown=e=>{if(e.key==='Enter')ok.click()}})}
+const uiAlert=m=>dialog({message:m,showCancel:false});
+const uiConfirm=(m,o={})=>dialog({message:m,...o});
+const uiPrompt=m=>dialog({message:m,input:true,okText:'Kaydet'});
+let toastTimer;
+function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,2200)}
+
+/* Depolama: veritabanı varsa orada, yoksa bu cihazda */
+async function run(fn){try{await fn();return true}catch(e){toast('Kaydedilemedi, tekrar dene');return false}}
+async function putRecord(r){
+  if(db){await db.doc('records/'+r.id).set(r);return}
+  const i=records.findIndex(x=>x.id===r.id);if(i>=0)records[i]=r;else records.push(r);
+  lsSet(OLD_KEY,JSON.stringify(records));renderAll();
+}
+async function removeRecord(id){
+  if(db){await db.doc('records/'+id).delete();return}
+  records=records.filter(x=>x.id!==id);lsSet(OLD_KEY,JSON.stringify(records));renderAll();
+}
+async function saveServices(list){
+  if(db){await db.doc('meta/services').set({list});return}
+  services=list;lsSet(OLD_SKEY,JSON.stringify(list));renderAll();
+}
+
+/* Görünüm */
+function renderServices(){
+  $('service').innerHTML=services.map(s=>`<option>${esc(s)}</option>`).join('');
+  $('serviceList').innerHTML=services.map((s,i)=>`<div class="card"><div class="rowhead" style="cursor:default"><span class="l">${esc(s)}</span><button type="button" class="smallbtn danger" data-act="rmsvc" data-k="${i}">Sil</button></div></div>`).join('');
+}
+function groupDebtors(){
+  const m=new Map();
+  records.filter(r=>debt(r)>0).forEach(r=>{
+    const k=custKey(r);let g=m.get(k);
+    if(!g){g={key:k,name:r.name,phone:r.phone,plates:new Set(),total:0,items:[]};m.set(k,g)}
+    g.total=r2(g.total+debt(r));g.items.push(r);if(r.plate)g.plates.add(r.plate);
+  });
+  return [...m.values()].sort((a,b)=>b.total-a.total);
+}
+function renderDebtors(){
+  debtorGroups=groupDebtors();
+  const total=r2(debtorGroups.reduce((a,g)=>a+g.total,0));
+  $('totalDebt').textContent=money(total);
+  $('debtorCount').textContent=debtorGroups.length?debtorGroups.length+' müşteriden tahsil edilecek':'';
+  if(!loaded){$('debtorList').innerHTML='<div class="empty">Yükleniyor…</div>';return}
+  $('debtorList').innerHTML=debtorGroups.length?debtorGroups.map((g,i)=>{
+    const items=[...g.items].sort((a,b)=>a.date.localeCompare(b.date));
+    const sub=[g.phone,...g.plates].filter(Boolean).join(' · ');
+    return `<div class="card${openSet.has('d:'+g.key)?' open':''}"><button type="button" class="rowhead" data-act="tg" data-k="d:${esc(g.key)}"><span class="l"><span class="name">${esc(g.name)}</span></span><span class="r"><span class="amt debt">${money(g.total)}</span><span class="chev"></span></span></button><div class="detail">${sub?`<div class="muted" style="margin-bottom:6px">${esc(sub)}</div>`:''}${items.map(r=>`<div class="line"><span>${esc(r.service)}<span class="muted"> · ${shortDate(r.date)}</span></span><b>${money(debt(r))}</b></div>`).join('')}<div class="drow"><button type="button" class="smallbtn primary" data-act="payC" data-k="${i}">Ödeme al</button><button type="button" class="smallbtn" data-act="showC" data-k="${i}">Kayıtlar</button></div></div></div>`;
+  }).join(''):'<div class="empty">Borçlu müşteri yok</div>';
+}
+function renderRecords(){
+  const q=$('search').value.trim().toLocaleLowerCase('tr-TR'),f=$('filter').value;
+  const list=records.filter(r=>[r.name,r.plate,r.phone,r.service,r.note].join(' ').toLocaleLowerCase('tr-TR').includes(q)).filter(r=>f==='all'||(f==='open'?debt(r)>0:debt(r)<=0)).sort((a,b)=>b.date.localeCompare(a.date));
+  $('recordList').innerHTML=list.length?list.map(r=>{
+    const d=debt(r);
+    return `<div class="card${openSet.has('r:'+r.id)?' open':''}"><button type="button" class="rowhead" data-act="tg" data-k="r:${esc(r.id)}"><span class="l"><span class="name">${esc(r.name)}</span><span class="sub">${esc(r.service)} · ${shortDate(r.date)}</span></span><span class="r">${d>0?`<span class="amt debt">${money(d)}</span>`:'<span class="pill">Ödendi</span>'}<span class="chev"></span></span></button><div class="detail"><div class="muted">${esc([r.plate,r.phone].filter(Boolean).join(' · '))}${r.plate||r.phone?'<br>':''}${niceDate(r.date)}</div>${r.note?`<div style="margin-top:6px">${esc(r.note)}</div>`:''}<div class="line" style="margin-top:8px"><span>Tutar ${money(r.amount)}</span><span>Alınan ${money(r.paid)}</span></div><div class="drow"><button type="button" class="smallbtn" data-act="edit" data-k="${esc(r.id)}">Düzenle</button>${d>0?`<button type="button" class="smallbtn primary" data-act="pay" data-k="${esc(r.id)}">Ödeme al</button><button type="button" class="smallbtn" data-act="paid" data-k="${esc(r.id)}">Tam ödendi</button>`:''}<button type="button" class="smallbtn danger" data-act="del" data-k="${esc(r.id)}">Sil</button></div></div></div>`;
+  }).join(''):`<div class="empty">${loaded?'Kayıt yok':'Yükleniyor…'}</div>`;
+}
+function renderNames(){
+  const seen=new Map();records.forEach(r=>seen.set(r.name.toLocaleLowerCase('tr-TR'),r.name));
+  $('names').innerHTML=[...seen.values()].map(n=>`<option value="${esc(n)}">`).join('');
+}
+function renderAll(){renderServices();renderDebtors();renderRecords();renderNames();if(typeof renderBackup==="function")renderBackup()}
+
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===name)));
+  ['debtors','entry','records','services'].forEach(id=>$(id).hidden=id!==name);
+  if(name==='entry'&&!$('editId').value)$('date').value=nowLocal();
+  window.scrollTo({top:0});
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+
+/* Form */
+function resetForm(){$('entryForm').reset();$('editId').value='';$('date').value=nowLocal();$('paid').value='0';$('saveBtn').textContent='Kaydet';$('cancelEdit').hidden=true}
+$('cancelEdit').onclick=()=>{resetForm();showTab('records')};
+$('name').addEventListener('change',()=>{
+  if($('editId').value)return;
+  const n=$('name').value.trim().toLocaleLowerCase('tr-TR');
+  const last=[...records].filter(r=>r.name.trim().toLocaleLowerCase('tr-TR')===n).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(last){if(!$('phone').value)$('phone').value=last.phone||'';if(!$('plate').value)$('plate').value=last.plate||''}
+});
+$('entryForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const amount=Number($('amount').value),paid=Number($('paid').value||0);
+  if(amount<0||paid<0){await uiAlert('Tutar negatif olamaz.');return}
+  if(paid>amount&&!(await uiConfirm('Alınan ödeme toplam tutardan fazla. Devam edilsin mi?')))return;
+  const id=$('editId').value||newId(),old=records.find(x=>x.id===id);
+  const r={...(old||{}),id,name:$('name').value.trim(),plate:$('plate').value.trim().toLocaleUpperCase('tr-TR'),phone:$('phone').value.trim(),date:$('date').value,service:$('service').value,amount,paid,note:$('note').value.trim(),createdAt:old?.createdAt||new Date().toISOString()};
+  if(await run(()=>putRecord(r))){resetForm();showTab(debt(r)>0?'debtors':'records');toast('Kaydedildi')}
+});
+function editRecord(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  showTab('entry');
+  $('editId').value=id;$('name').value=r.name;$('plate').value=r.plate||'';$('phone').value=r.phone||'';$('date').value=r.date;
+  if(!services.includes(r.service)){const o=document.createElement('option');o.textContent=r.service;$('service').appendChild(o)}
+  $('service').value=r.service;$('amount').value=r.amount;$('paid').value=r.paid||0;$('note').value=r.note||'';
+  $('saveBtn').textContent='Değişikliği kaydet';$('cancelEdit').hidden=false;
+}
+
+/* Ödemeler */
+const withPay=(r,p,note)=>({...r,paid:r2(Number(r.paid||0)+p),paymentHistory:[...(r.paymentHistory||[]),{date:nowLocal(),amount:p,...(note?{note}:{})}]});
+async function payRecord(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  const v=await uiPrompt(`${r.name}\nKalan borç: ${money(debt(r))}\nAlınan ödeme (₺):`);if(v===null)return;
+  const n=r2(Number(String(v).replace(',','.')));
+  if(!Number.isFinite(n)||n<=0){await uiAlert('Geçerli bir tutar gir.');return}
+  if(n>debt(r)&&!(await uiConfirm('Tutar kalan borçtan fazla. Yine de kaydedilsin mi?')))return;
+  if(await run(()=>putRecord(withPay(r,n))))toast('Ödeme kaydedildi');
+}
+async function markPaid(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  if(!(await uiConfirm(`${r.name}: ${money(debt(r))} tamamen ödendi olarak işaretlensin mi?`,{okText:'Evet, ödendi'})))return;
+  if(await run(()=>putRecord(withPay(r,debt(r),'Tamamı ödendi'))))toast('Ödendi olarak işaretlendi');
+}
+async function delRecord(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  if(await uiConfirm(`${r.name} kaydı silinsin mi? Geri alınamaz.`,{okText:'Sil',danger:true}))if(await run(()=>removeRecord(id)))toast('Silindi');
+}
+async function payCustomer(i){
+  const g=debtorGroups[i];if(!g)return;
+  const v=await uiPrompt(`${g.name}\nToplam borç: ${money(g.total)}\nAlınan ödeme (₺):`);if(v===null)return;
+  const n=r2(Number(String(v).replace(',','.')));
+  if(!Number.isFinite(n)||n<=0){await uiAlert('Geçerli bir tutar gir.');return}
+  if(n>g.total){await uiAlert(`Tutar toplam borçtan (${money(g.total)}) fazla.`);return}
+  let rem=n;
+  const ok=await run(async()=>{for(const r of [...g.items].sort((a,b)=>a.date.localeCompare(b.date))){if(rem<=0)break;const p=Math.min(debt(r),rem);if(p<=0)continue;await putRecord(withPay(r,p));rem=r2(rem-p)}});
+  if(ok)toast('Ödeme kaydedildi');
+}
+
+/* İş çeşitleri */
+$('serviceForm').addEventListener('submit',async e=>{
+  e.preventDefault();const s=$('newService').value.trim();if(!s)return;
+  if(services.some(x=>x.toLocaleLowerCase('tr-TR')===s.toLocaleLowerCase('tr-TR'))){await uiAlert('Bu iş zaten var.');return}
+  if(await run(()=>saveServices([...services,s])))$('newService').value='';
+});
+
+/* Tıklamalar */
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const a=t.dataset.act,k=t.dataset.k;
+  if(a==='tg'){const c=t.closest('.card');const o=c.classList.toggle('open');o?openSet.add(k):openSet.delete(k)}
+  else if(a==='pay')payRecord(k);
+  else if(a==='paid')markPaid(k);
+  else if(a==='del')delRecord(k);
+  else if(a==='edit')editRecord(k);
+  else if(a==='payC')payCustomer(Number(k));
+  else if(a==='showC'){const g=debtorGroups[Number(k)];if(g){$('search').value=g.name;$('filter').value='open';showTab('records');renderRecords()}}
+  else if(a==='rmsvc'){const i=Number(k),s=services[i];if(await uiConfirm(`"${s}" listeden silinsin mi?`,{okText:'Sil',danger:true}))run(()=>saveServices(services.filter((_,j)=>j!==i)))}
+});
+$('search').addEventListener('input',renderRecords);
+$('filter').addEventListener('change',renderRecords);
+
+/* Yedek */
+function saveFile(name,data,mime){
+  const url=URL.createObjectURL(new Blob([data],{type:mime}));
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+const today=()=>new Date().toISOString().slice(0,10);
+function backupAge(){const t=Number(lsGet(BK_KEY)||0);return t?Math.floor((Date.now()-t)/864e5):null}
+function renderBackup(){
+  const age=backupAge(),n=records.length;
+  $('backupInfo').textContent=age===null?'Henüz yedek alınmadı.':'Son yedek: '+(age===0?'bugün':age+' gün önce');
+  const b=$('backupBanner');
+  if(loaded&&n>0&&(age===null||age>=7)){b.textContent=age===null?'Kayıtların yedeği yok. Kayıtlar sekmesinden yedek al.':'Son yedek '+age+' gün önce. Yeni bir yedek al.';b.hidden=false}else b.hidden=true;
+}
+$('jsonBtn').onclick=()=>{saveFile('lastikci-yedek-'+today()+'.json',JSON.stringify({records,services,version:2},null,2),'application/json');lsSet(BK_KEY,String(Date.now()));renderBackup();toast('Yedek hazır')};
+$('csvBtn').onclick=()=>{
+  const st=r=>debt(r)<=0?'Ödendi':Number(r.paid||0)>0?'Kısmen ödendi':'Ödenmedi';
+  const rows=[['Müşteri','Plaka','Telefon','Tarih','İş','Tutar','Alınan','Kalan','Durum','Not'],...records.map(r=>[r.name,r.plate,r.phone,niceDate(r.date),r.service,r.amount,r.paid,debt(r),st(r),r.note])];
+  saveFile('lastikci-kayitlar-'+today()+'.csv','\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n'),'text/csv;charset=utf-8');
+};
+$('importFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const o=JSON.parse(await f.text());
+    if(!Array.isArray(o.records)||!Array.isArray(o.services))throw 0;
+    if(!(await uiConfirm('Yedekteki '+o.records.length+' kayıt yüklenecek. Şu anki kayıtların yerine geçer. Devam edilsin mi?',{okText:'Yükle'})))return;
+    records=o.records.filter(r=>r&&r.id&&r.name);services=o.services.length?o.services:[...defaults];
+    lsSet(OLD_KEY,JSON.stringify(records));lsSet(OLD_SKEY,JSON.stringify(services));renderAll();toast('Yedek yüklendi');
+  }catch{await uiAlert('Bu dosya geçerli bir yedek değil.')}
+  finally{e.target.value=''}
+});
+
+/* Başlangıç */
+const clone=o=>JSON.parse(JSON.stringify(o));
+function loadLocal(){
+  try{records=JSON.parse(lsGet(OLD_KEY)||'[]')}catch{records=[]}
+  try{services=JSON.parse(lsGet(OLD_SKEY)||'null')||[...defaults]}catch{services=[...defaults]}
+  loaded=true;
+}
+function init(){
+  loadLocal();resetForm();
+  try{localStorage.setItem('lastikci_test','1');localStorage.removeItem('lastikci_test')}catch{lsOk=false;$('localBanner').hidden=false}
+  renderAll();
+}
+init();
+try{if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js')}catch{}
+</script>
+</body></html>
