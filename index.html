@@ -72,6 +72,7 @@ textarea{min-height:72px;resize:vertical}
 .card.open .chev{transform:rotate(45deg)}
 .detail{display:none;padding:0 14px 14px}
 .card.open .detail{display:block}
+.prof{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 6px}.prof>div{background:var(--accent-soft);border-radius:10px;padding:8px 10px;min-width:0}.prof span{display:block}.prof b{font-size:16px;overflow-wrap:anywhere}
 .line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
 .line:first-child{border-top:0}
 .muted{color:var(--muted);font-size:13px}
@@ -202,7 +203,9 @@ function groupDebtors(){
     if(!g){g={key:k,name:r.name,phone:r.phone,plates:new Set(),total:0,items:[]};m.set(k,g)}
     g.total=r2(g.total+debt(r));g.items.push(r);if(r.plate)g.plates.add(r.plate);
   });
-  return [...m.values()].sort((a,b)=>b.total-a.total);
+  const groups=[...m.values()].sort((a,b)=>b.total-a.total);
+  groups.forEach(g=>{g.all=records.filter(r=>custKey(r)===g.key).sort((a,b)=>b.date.localeCompare(a.date))});
+  return groups;
 }
 function renderDebtors(){
   debtorGroups=groupDebtors();
@@ -211,9 +214,9 @@ function renderDebtors(){
   $('debtorCount').textContent=debtorGroups.length?debtorGroups.length+' müşteriden tahsil edilecek':'';
   if(!loaded){$('debtorList').innerHTML='<div class="empty">Yükleniyor…</div>';return}
   $('debtorList').innerHTML=debtorGroups.length?debtorGroups.map((g,i)=>{
-    const items=[...g.items].sort((a,b)=>a.date.localeCompare(b.date));
     const sub=[g.phone,...g.plates].filter(Boolean).join(' · ');
-    return `<div class="card${openSet.has('d:'+g.key)?' open':''}"><button type="button" class="rowhead" data-act="tg" data-k="d:${esc(g.key)}"><span class="l"><span class="name">${esc(g.name)}</span></span><span class="r"><span class="amt debt">${money(g.total)}</span><span class="chev"></span></span></button><div class="detail">${sub?`<div class="muted" style="margin-bottom:6px">${esc(sub)}</div>`:''}${items.map(r=>`<div class="line"><span>${esc(r.service)}<span class="muted"> · ${shortDate(r.date)}</span></span><b>${money(debt(r))}</b></div>`).join('')}<div class="drow"><button type="button" class="smallbtn primary" data-act="payC" data-k="${i}">Ödeme al</button><button type="button" class="smallbtn" data-act="showC" data-k="${i}">Kayıtlar</button></div></div></div>`;
+    const jobs=g.all.map(r=>{const d=debt(r);return `<div class="line"><span>${esc(r.service)}<span class="muted"> · ${shortDate(r.date)}</span></span>${d>0?`<b class="debt">${money(d)}</b>`:'<span class="pill">Ödendi</span>'}</div>`}).join('');
+    return `<div class="card${openSet.has('d:'+g.key)?' open':''}"><button type="button" class="rowhead" data-act="tg" data-k="d:${esc(g.key)}"><span class="l"><span class="name">${esc(g.name)}</span></span><span class="r"><span class="amt debt">${money(g.total)}</span><span class="chev"></span></span></button><div class="detail">${sub?`<div class="muted" style="margin-bottom:8px">${esc(sub)}</div>`:''}<div class="prof"><div><span class="muted">Yapılan iş</span><b>${g.all.length}</b></div><div><span class="muted">Ödenmemiş</span><b>${g.items.length}</b></div><div><span class="muted">Toplam borç</span><b class="debt">${money(g.total)}</b></div></div>${jobs}<div class="drow"><button type="button" class="smallbtn primary" data-act="payC" data-k="${i}">Ödeme al</button><button type="button" class="smallbtn" data-act="showC" data-k="${i}">Kayıtlar</button></div></div></div>`;
   }).join(''):'<div class="empty">Borçlu müşteri yok</div>';
 }
 function renderRecords(){
