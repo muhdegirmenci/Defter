@@ -1,0 +1,2 @@
+# Defter
+Veresiye defteri 
